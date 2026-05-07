@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 import tensorflow as tf
-from keras import layers, models
+from tensorflow.keras import layers, models
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TRAIN_DIR = BASE_DIR / "data" / "train"
@@ -42,7 +42,8 @@ val_ds = val_ds.cache().prefetch(tf.data.AUTOTUNE)
 
 
 model = models.Sequential([
-    layers.Rescaling(1./255, input_shape=(32, 32, 1)),
+    layers.Input(shape=(32, 32, 1)),
+    layers.Rescaling(1./255),
 
     layers.Conv2D(32, (3, 3), activation="relu"),
     layers.MaxPooling2D(),
@@ -67,11 +68,16 @@ model.compile(
 )
 
 model.summary()
-
+early_stop = tf.keras.callbacks.EarlyStopping(
+    monitor="val_loss",
+    patience=3,
+    restore_best_weights=True
+)
 history = model.fit(
     train_ds,
     validation_data=val_ds,
-    epochs=EPOCHS
+    epochs=EPOCHS,
+    callbacks=[early_stop]
 )
 
 model.save(MODEL_DIR / "hindi_digit_cnn.keras")
